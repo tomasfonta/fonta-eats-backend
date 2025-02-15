@@ -21,6 +21,7 @@ const searchRestaurants = async (req: Request, res: Response) => {
         const cityCheck = await Restaurant.countDocuments(query);
 
         if (cityCheck === 0) {
+            console.log("No matches for ", city);
             res.status(404).json({
                 data: [],
                 pagination: {
@@ -42,7 +43,7 @@ const searchRestaurants = async (req: Request, res: Response) => {
                 const searchRegex = new RegExp(searchQuery, "i");
                 query["$or"] = [
                     { restaurantName: searchRegex },
-                    { cuisine: { $in: [searchRegex] } },
+                    { cuisines: { $in: [searchRegex] } },
                 ];
             }
 
