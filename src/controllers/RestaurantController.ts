@@ -9,7 +9,7 @@ const searchRestaurants = async (req: Request, res: Response) => {
         const city = req.params.city;
 
         const searchQuery = (req.query.searchQuery as string) || "";
-        const selectedCuisines = (req.query.selectedCuisines as string) || "";
+        const selectedCuisines = (req.query.cuisines as string) || "";
         const sortOptions = (req.query.sortOption as string) || "lastUpdated";
 
         const page = parseInt(req.query.page as string) || 1;
