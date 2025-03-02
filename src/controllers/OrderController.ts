@@ -2,11 +2,13 @@ import { Request, Response } from "express";
 import Stripe from "stripe";
 import Restaurant, { menuItemType } from "../model/restaurant";
 import Order from "../model/order";
+import { error } from "console";
 
 
 const STRIPE = new Stripe(process.env.STRIPE_API_KEY as string);
 
 const FRONTEND_URL = process.env.FRONTEND_URL as string;
+const STRIPE_ENDPOINT_SECRET = process.env.STRIPE_WEBHOOK_SECRET as string;
 
 type CheckoutSessionRequest = {
     cartItems: {
@@ -21,6 +23,32 @@ type CheckoutSessionRequest = {
         city: string
     };
     restaurantId: string;
+};
+
+const stripeWebhookHandler = async (req: Request, res: Response) => {
+    let event;
+
+    try {
+        const sig = req.headers["stripe-signature"];
+        event = STRIPE.webhooks.constructEvent(req.body, sig as string, STRIPE_ENDPOINT_SECRET);
+    } catch (error: any) {
+        console.log(error);
+        res.status(400).send(`Webhook error: ${error.message}`).send()
+    }
+
+    if (event && event.type == "checkout.session.completed") {
+
+        const order = await Order.findById(event.data.object.metadata?.orderId);
+
+        if (!order) {
+            res.status(404).json({ message: "Order not found." });
+        } else {
+            order.totalAmount = event.data.object.amount_total;
+            order.status = "paid";
+            await order.save();
+            res.status(200).send();
+        }
+    }
 };
 
 const createCheckoutSession = async (req: Request, res: Response) => {
@@ -40,6 +68,7 @@ const createCheckoutSession = async (req: Request, res: Response) => {
             deliveryDetails: checkoutSessionRequest.deliveryDetails,
             cartItems: checkoutSessionRequest.cartItems,
             createdAt: new Date(),
+            status: "placed"
         })
 
         const lineItems = createLineItems(checkoutSessionRequest, restaurant.menuItems);
@@ -122,5 +151,6 @@ const createSession = async (
 
 export default {
     createCheckoutSession,
-    createLineItems
+    createLineItems,
+    stripeWebhookHandler
 }
