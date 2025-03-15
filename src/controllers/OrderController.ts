@@ -2,7 +2,6 @@ import { Request, Response } from "express";
 import Stripe from "stripe";
 import Restaurant, { menuItemType } from "../model/restaurant";
 import Order from "../model/order";
-import { error } from "console";
 
 
 const STRIPE = new Stripe(process.env.STRIPE_API_KEY as string);
@@ -24,6 +23,20 @@ type CheckoutSessionRequest = {
     };
     restaurantId: string;
 };
+
+const getMyOrder = async (req: Request, res: Response) => {
+    try {
+        const orders = await Order.find({ user: req.userId })
+            .populate("restaurant")
+            .populate("user");
+
+        res.json(orders);
+    } catch (error: any) {
+        console.log(error);
+        res.status(500).json({ message: "Something went wrong gettin getting the order" });
+    }
+};
+
 
 const stripeWebhookHandler = async (req: Request, res: Response) => {
     let event;
@@ -152,5 +165,6 @@ const createSession = async (
 export default {
     createCheckoutSession,
     createLineItems,
-    stripeWebhookHandler
+    stripeWebhookHandler,
+    getMyOrder
 }

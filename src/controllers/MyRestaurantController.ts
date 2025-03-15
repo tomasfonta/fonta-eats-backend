@@ -13,10 +13,11 @@ const getMyRestaurant = async (req: Request, res: Response) => {
         const restaurant = await Restaurant.findOne({ user: req.userId });
 
         if (!restaurant) {
-            res.status(404).json({ message: "Restaurant not found" });
+            console.log("Restaurant not found")
+            res.status(404).json({ message: "Restaurant not found" }).send();
+        } else {
+            res.json(restaurant);
         }
-
-        res.json(restaurant);
 
     } catch (error) {
         console.log("Error trying to get restaurant", error);
